@@ -5,7 +5,7 @@
 
 namespace hft {
 
-struct Limit {
+struct alignas(64) Limit {
     Price price;
 
     uint32_t head;   // first order index
@@ -61,5 +61,8 @@ struct Limit {
         return head == 0;
     }
 };
+
+static_assert(sizeof(Limit) <= 64,
+              "Limit exceeds cache line size");
 
 }

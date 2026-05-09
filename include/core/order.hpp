@@ -4,26 +4,34 @@
 
 namespace hft {
 
-struct Order {
-    OrderId  order_id;
-    Price    price;
+struct alignas(64) Order {
+
+    OrderId order_id;
+
+    Price price;
+
     Quantity quantity;
 
-    uint32_t next;   // index in pool (for linked list)
+    uint32_t next;
+
     uint32_t prev;
+
+    Timestamp timestamp;
 
     Side side;
 
-    uint64_t timestamp;
+    bool active = true;
 
-    // Reduce quantity after match
-    inline void reduce(Quantity qty) {
+    void reduce(Quantity qty) {
         quantity -= qty;
     }
 
-    inline bool is_filled() const {
+    bool is_filled() const {
         return quantity == 0;
     }
 };
+
+static_assert(sizeof(Order) <= 64,
+              "Order exceeds cache line size");
 
 }

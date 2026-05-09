@@ -3,6 +3,7 @@
 #include <iostream>
 #include "core/order_book.hpp"
 #include "memory/order_pool.hpp"
+#include "core/engine_stats.hpp"
 
 namespace hft {
 
@@ -10,10 +11,14 @@ class MatchingEngine {
 public:
     OrderBook book;
 
+    EngineStats stats;
+
     MatchingEngine(OrderPool& pool)
     : book(pool) {}
 
     void process_order(uint32_t incoming_index) {
+        ++stats.orders_processed;
+
         Order& incoming = book.pool.get(incoming_index);
 
         if (incoming.side == Side::Buy) {
@@ -25,12 +30,17 @@ public:
         // If still remaining → add to book
         if (!incoming.is_filled()) {
             book.add_order(incoming_index);
+            ++stats.active_orders;
+        }
+        else {
+            book.pool.free(incoming_index);
         }
     }
 
 private:
 
     void match_buy(uint32_t incoming_index) {
+
         Order& incoming = book.pool.get(incoming_index);
 
         while (!incoming.is_filled() && !book.asks.empty()) {
@@ -56,22 +66,25 @@ private:
                 Quantity traded =
                     std::min(incoming.quantity,
                              resting.quantity);
+                
+                ++stats.trades_executed;
 
                 incoming.reduce(traded);
                 resting.reduce(traded);
 
                 limit.total_quantity -= traded;
 
-                std::cout << "TRADE: "
-                          << traded
-                          << " @ "
-                          << resting.price
-                          << "\n";
+                // std::cout << "TRADE: "
+                //           << traded
+                //           << " @ "
+                //           << resting.price
+                //           << "\n";
 
                 // Remove filled resting order
-                if (resting.is_filled()) {
+                if (__builtin_expect(resting.is_filled(), 0)) {
                     limit.pop_front(book.pool);
                     book.pool.free(resting_index);
+                    --stats.active_orders;
                 }
             }
 
@@ -83,6 +96,7 @@ private:
     }
 
     void match_sell(uint32_t incoming_index) {
+
         Order& incoming = book.pool.get(incoming_index);
 
         while (!incoming.is_filled() && !book.bids.empty()) {
@@ -109,20 +123,23 @@ private:
                     std::min(incoming.quantity,
                              resting.quantity);
 
+                ++stats.trades_executed;
+
                 incoming.reduce(traded);
                 resting.reduce(traded);
 
                 limit.total_quantity -= traded;
 
-                std::cout << "TRADE: "
-                          << traded
-                          << " @ "
-                          << resting.price
-                          << "\n";
+                // std::cout << "TRADE: "
+                //           << traded
+                //           << " @ "
+                //           << resting.price
+                //           << "\n";
 
-                if (resting.is_filled()) {
+                if (__builtin_expect(resting.is_filled(), 0)) {
                     limit.pop_front(book.pool);
                     book.pool.free(resting_index);
+                    --stats.active_orders;
                 }
             }
 
