@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/order.hpp"
+#include "memory/order_pool.hpp"
 
 namespace hft {
 
@@ -17,14 +18,14 @@ struct Limit {
         : price(p), head(0), tail(0), total_quantity(0) {}
 
     // Add order to end (FIFO)
-    void add_order(uint32_t order_index, Order* pool) {
-        Order& order = pool[order_index];
+    void add_order(uint32_t order_index, OrderPool& pool) {
+        Order& order = pool.get(order_index);
 
         order.next = 0;
         order.prev = tail;
 
         if (tail != 0) {
-            pool[tail].next = order_index;
+            pool.get(tail).next = order_index;
         }
 
         tail = order_index;
@@ -37,16 +38,16 @@ struct Limit {
     }
 
     // Remove order from front (used in matching)
-    uint32_t pop_front(Order* pool) {
+    uint32_t pop_front(OrderPool& pool) {
         if (head == 0) return 0;
 
         uint32_t order_index = head;
-        Order& order = pool[order_index];
+        Order& order = pool.get(order_index);
 
         head = order.next;
 
         if (head != 0) {
-            pool[head].prev = 0;
+            pool.get(head).prev = 0;
         } else {
             tail = 0;
         }

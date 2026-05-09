@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include "core/order_book.hpp"
+#include "memory/order_pool.hpp"
 
 namespace hft {
 
@@ -9,11 +10,11 @@ class MatchingEngine {
 public:
     OrderBook book;
 
-    MatchingEngine(Order* pool)
-        : book(pool) {}
+    MatchingEngine(OrderPool& pool)
+    : book(pool) {}
 
     void process_order(uint32_t incoming_index) {
-        Order& incoming = book.order_pool[incoming_index];
+        Order& incoming = book.pool.get(incoming_index);
 
         if (incoming.side == Side::Buy) {
             match_buy(incoming_index);
@@ -30,7 +31,7 @@ public:
 private:
 
     void match_buy(uint32_t incoming_index) {
-        Order& incoming = book.order_pool[incoming_index];
+        Order& incoming = book.pool.get(incoming_index);
 
         while (!incoming.is_filled() && !book.asks.empty()) {
 
@@ -50,7 +51,7 @@ private:
                 uint32_t resting_index = limit.head;
 
                 Order& resting =
-                    book.order_pool[resting_index];
+                    book.pool.get(resting_index);
 
                 Quantity traded =
                     std::min(incoming.quantity,
@@ -69,7 +70,8 @@ private:
 
                 // Remove filled resting order
                 if (resting.is_filled()) {
-                    limit.pop_front(book.order_pool);
+                    limit.pop_front(book.pool);
+                    book.pool.free(resting_index);
                 }
             }
 
@@ -81,7 +83,7 @@ private:
     }
 
     void match_sell(uint32_t incoming_index) {
-        Order& incoming = book.order_pool[incoming_index];
+        Order& incoming = book.pool.get(incoming_index);
 
         while (!incoming.is_filled() && !book.bids.empty()) {
 
@@ -101,7 +103,7 @@ private:
                 uint32_t resting_index = limit.head;
 
                 Order& resting =
-                    book.order_pool[resting_index];
+                    book.pool.get(resting_index);
 
                 Quantity traded =
                     std::min(incoming.quantity,
@@ -119,7 +121,8 @@ private:
                           << "\n";
 
                 if (resting.is_filled()) {
-                    limit.pop_front(book.order_pool);
+                    limit.pop_front(book.pool);
+                    book.pool.free(resting_index);
                 }
             }
 

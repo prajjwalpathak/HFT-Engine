@@ -13,6 +13,7 @@ add_library(network
 # Engine binary
 add_executable(engine
     main/engine_main.cpp
+    memory/order_pool.cpp
 )
 
 target_link_libraries(engine PRIVATE core network)

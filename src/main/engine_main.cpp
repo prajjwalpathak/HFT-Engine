@@ -1,44 +1,47 @@
 #include <iostream>
+
+#include "memory/order_pool.hpp"
 #include "core/matching_engine.hpp"
 
 int main() {
 
     using namespace hft;
 
-    Order pool[10];
+    OrderPool pool(100);
 
     MatchingEngine engine(pool);
 
-    pool[1] = {
+    // Allocate SELL order
+    uint32_t sell_index = pool.allocate();
+
+    auto& sell = pool.get(sell_index);
+
+    sell = {
         1,
-        10000,
+        10100,
         50,
         0,0,
-        Side::Buy,
+        Side::Sell,
         1
     };
 
-    pool[2] = {
+    engine.process_order(sell_index);
+
+    // Allocate BUY order
+    uint32_t buy_index = pool.allocate();
+
+    auto& buy = pool.get(buy_index);
+
+    buy = {
         2,
-        10000,
-        30,
+        10200,
+        70,
         0,0,
         Side::Buy,
         2
     };
 
-    engine.process_order(1);
-    engine.process_order(2);
-
-    std::cout
-        << "Best Bid Before Cancel: "
-        << engine.book.best_bid()
-        << "\n";
-
-    engine.book.cancel_order(1);
-
-    std::cout
-        << "Cancel completed\n";
+    engine.process_order(buy_index);
 
     return 0;
 }

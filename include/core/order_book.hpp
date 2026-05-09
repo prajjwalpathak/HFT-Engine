@@ -3,6 +3,7 @@
 #include <map>
 #include <unordered_map>
 #include "core/limit.hpp"
+#include "memory/order_pool.hpp"
 
 namespace hft {
 
@@ -17,14 +18,15 @@ public:
     // Order Lookup for Cancelling order
     std::unordered_map<OrderId, uint32_t> order_lookup;
 
-    // Order pool (temporary for now)
-    Order* order_pool;
+    // Order pool
+    OrderPool& pool;
 
-    OrderBook(Order* pool) : order_pool(pool) {}
+    OrderBook(OrderPool& p)
+    : pool(p) {}
 
     // Add a limit order
     void add_order(uint32_t order_index) {
-        Order& order = order_pool[order_index];
+        Order& order = pool.get(order_index);
         order_lookup[order.order_id] = order_index;
 
         if (order.side == Side::Buy) {
@@ -35,7 +37,7 @@ public:
                 it = new_it;
             }
 
-            it->second.add_order(order_index, order_pool);
+            it->second.add_order(order_index, pool);
         } else {
             auto it = asks.find(order.price);
 
@@ -44,7 +46,7 @@ public:
                 it = new_it;
             }
 
-            it->second.add_order(order_index, order_pool);
+            it->second.add_order(order_index, pool);
         }
     }
 
@@ -58,7 +60,7 @@ public:
 
         uint32_t index = it->second;
 
-        Order& order = order_pool[index];
+        Order& order = pool.get(index);
 
         if (order.side == Side::Buy) {
             cancel_from_side(order, bids);
@@ -67,6 +69,7 @@ public:
         }
 
         order_lookup.erase(it);
+        pool.free(index);
 
         return true;
     }
@@ -97,13 +100,13 @@ private:
         Limit& limit = limit_it->second;
 
         if (order.prev != 0) {
-            order_pool[order.prev].next = order.next;
+            pool.get(order.prev).next = order.next;
         } else {
             limit.head = order.next;
         }
 
         if (order.next != 0) {
-            order_pool[order.next].prev = order.prev;
+            pool.get(order.next).prev = order.prev;
         } else {
             limit.tail = order.prev;
         }
