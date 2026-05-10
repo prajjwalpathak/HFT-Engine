@@ -62,7 +62,6 @@ struct alignas(64) Limit {
     }
 };
 
-static_assert(sizeof(Limit) <= 64,
-              "Limit exceeds cache line size");
+static_assert(sizeof(Limit) <= 64, "Limit exceeds cache line size");
 
 }

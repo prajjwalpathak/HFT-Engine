@@ -22,16 +22,17 @@ struct alignas(64) Order {
 
     bool active = true;
 
+    __attribute__((always_inline)) inline
     void reduce(Quantity qty) {
         quantity -= qty;
     }
 
+    __attribute__((always_inline)) inline
     bool is_filled() const {
         return quantity == 0;
     }
 };
 
-static_assert(sizeof(Order) <= 64,
-              "Order exceeds cache line size");
+static_assert(sizeof(Order) <= 64, "Order exceeds cache line size");
 
 }

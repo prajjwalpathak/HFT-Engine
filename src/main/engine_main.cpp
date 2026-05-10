@@ -1,29 +1,45 @@
 #include <iostream>
+#include <random>
 
 #include "memory/order_pool.hpp"
 #include "core/matching_engine.hpp"
+#include "core/book_validator.hpp"
 #include "common/timer.hpp"
+#include "network/protocol.hpp"
 
 int main() {
 
+    #ifdef ENABLE_VALIDATION
+
+    std::cout << "Running VALIDATION build\n";
+
+    #else
+
+    std::cout << "Running RELEASE build\n";
+
+    #endif
+
     using namespace hft;
 
-    // Large enough pool for benchmark
-    OrderPool pool(1'000'000);
+    constexpr uint32_t NUM_ORDERS = 100000;
+
+    OrderPool pool(1000000);
 
     MatchingEngine engine(pool);
 
-    std::cout << "Order Size: "
-              << sizeof(Order)
-              << " bytes\n";
+    // Random generators
+    std::mt19937 rng(42);
 
-    std::cout << "Limit Size: "
-              << sizeof(Limit)
-              << " bytes\n";
+    std::uniform_int_distribution<uint32_t>
+        price_dist(10000, 10010);
+
+    std::uniform_int_distribution<uint32_t>
+        qty_dist(1, 1000);
+
+    std::uniform_int_distribution<int>
+        side_dist(0, 1);
 
     Timer timer;
-
-    constexpr uint32_t NUM_ORDERS = 100000;
 
     timer.start();
 
@@ -37,17 +53,22 @@ int main() {
             .order_id = i,
 
             .price = static_cast<Price>(
-                10000 + (i % 10)
+                price_dist(rng)
             ),
 
-            .quantity = 100,
+            .quantity = static_cast<Quantity>(
+                qty_dist(rng)
+            ),
 
             .next = 0,
+
             .prev = 0,
 
-            .timestamp = i,
+            .timestamp = static_cast<Timestamp>(
+                i
+            ),
 
-            .side = (i % 2 == 0)
+            .side = side_dist(rng)
                 ? Side::Buy
                 : Side::Sell,
 
@@ -55,36 +76,66 @@ int main() {
         };
 
         engine.process_order(idx);
+
+        // Periodic correctness validation
+        #ifdef ENABLE_VALIDATION
+
+        if ((i % 1000) == 0) {
+
+            BookValidator::validate(
+                engine.book
+            );
+        }
+
+        #endif
     }
 
     auto elapsed = timer.elapsed_ns();
 
-    std::cout << "\nBenchmark Results\n";
+    #ifdef ENABLE_VALIDATION
+
+    BookValidator::validate(
+        engine.book
+    );
+
+    #endif
+
+    std::cout << "\n=== Engine Memory Layout ===\n";
+
+    std::cout << "Order Size: "
+              << sizeof(Order)
+              << " bytes\n";
+
+    std::cout << "Limit Size: "
+              << sizeof(Limit)
+              << " bytes\n";
+
+    std::cout << "\n=== Benchmark Results ===\n";
 
     std::cout << "Elapsed Time: "
               << elapsed
               << " ns\n";
 
     std::cout << "Orders/sec: "
-              << (1'000'000'000ULL * NUM_ORDERS / elapsed)
+              << (1000000000ULL * NUM_ORDERS / elapsed)
               << "\n";
 
-    std::cout << "\nEngine Statistics\n";
+    std::cout << "\n=== Engine Statistics ===\n";
 
     std::cout << "Orders Processed: "
-              << engine.stats.orders_processed.load()
+              << engine.stats.orders_processed
               << "\n";
 
     std::cout << "Trades Executed: "
-              << engine.stats.trades_executed.load()
+              << engine.stats.trades_executed
               << "\n";
 
     std::cout << "Orders Cancelled: "
-              << engine.stats.orders_cancelled.load()
+              << engine.stats.orders_cancelled
               << "\n";
 
     std::cout << "Active Orders: "
-              << engine.stats.active_orders.load()
+              << engine.stats.active_orders
               << "\n";
 
     std::cout << "Pool Capacity: "
@@ -94,6 +145,8 @@ int main() {
     std::cout << "Pool Available: "
               << pool.available()
               << "\n";
+    
+    std::cout << "NewOrderMessage Size: " << sizeof(NewOrderMessage) << " bytes\n";
 
     return 0;
 }
