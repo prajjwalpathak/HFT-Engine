@@ -8,15 +8,12 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include "common/timer.hpp"
 
 using namespace hft;
 
 void run_client(uint64_t client_id) {
-    int sock = socket(
-        AF_INET,
-        SOCK_STREAM,
-        0
-    );
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
 
     sockaddr_in server_addr {};
 
@@ -32,7 +29,7 @@ void run_client(uint64_t client_id) {
         sizeof(server_addr)
     );
 
-    for (uint64_t i = 1; i <= 10000; i++) {
+    for (uint64_t i = 1; i <= 100000; i++) {
         NewOrderMessage msg {
 
             .type = MessageType::NewOrder,
@@ -51,14 +48,17 @@ void run_client(uint64_t client_id) {
         send(sock, &msg, sizeof(msg), 0);
     }
 
-    std::cout << "Order sent\n";
+    // std::cout << "Order sent\n";
 
     close(sock);
 }
 
 int main() {
 
-    constexpr int NUM_CLIENTS = 8;
+    Timer timer;
+    timer.start();
+
+    constexpr int NUM_CLIENTS = 16;
 
     std::vector<std::thread> clients;
 
@@ -69,6 +69,14 @@ int main() {
     for (auto& thread : clients) {
         thread.join();
     }
+
+    auto elapsed = timer.elapsed_ns();
+
+    uint64_t total_orders = NUM_CLIENTS * 100000;
+
+    std::cout << "Client elapsed ns: " << elapsed << "\n";
+
+    std::cout << "Orders/sec: "<< (1000000000ULL *total_orders / elapsed) << "\n";
 
     return 0;
 }

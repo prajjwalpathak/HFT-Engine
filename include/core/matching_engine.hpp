@@ -36,6 +36,7 @@ public:
         // If still remaining → add to book
         if (!incoming.is_filled()) {
             book.add_order(incoming_index);
+            publish_top_of_book();
             ++stats.active_orders;
         }
         else {
@@ -44,7 +45,6 @@ public:
     }
 
 private:
-    void publish_top_of_book();
 
     void match_buy(uint32_t incoming_index) {
 
@@ -99,7 +99,8 @@ private:
                 };
 
                 publisher.publish(&trade, sizeof(trade));
-                std::cout << "Broadcasted Trade ID: " << trade.trade_id << "\n";
+                publish_top_of_book();
+                // std::cout << "Broadcasted Trade ID: " << trade.trade_id << "\n";
 
                 limit.total_quantity -= traded;
 
@@ -145,17 +146,34 @@ private:
 
                 uint32_t resting_index = limit.head;
 
-                Order& resting =
-                    book.pool.get(resting_index);
+                Order& resting = book.pool.get(resting_index);
 
-                Quantity traded =
-                    std::min(incoming.quantity,
-                             resting.quantity);
+                Quantity traded = std::min(incoming.quantity, resting.quantity);
 
                 ++stats.trades_executed;
 
                 incoming.reduce(traded);
                 resting.reduce(traded);
+
+                TradeMessage trade {
+
+                    .type = MarketDataType::Trade,
+
+                    .trade_id = next_trade_id++,
+
+                    .buy_order_id = resting.order_id,
+
+                    .sell_order_id = incoming.order_id,
+
+                    .price = resting.price,
+
+                    .quantity = traded,
+
+                    .timestamp = incoming.timestamp
+                };
+
+                publisher.publish(&trade, sizeof(trade));
+                publish_top_of_book();
 
                 limit.total_quantity -= traded;
 
@@ -187,6 +205,36 @@ private:
             best_bid_price = book.bids.begin()->first;
             best_bid_quantity = best_bid.total_quantity;
         }
+
+        uint32_t best_ask_price = 0;
+        uint32_t best_ask_quantity = 0;
+
+        if (!book.asks.empty()) {
+            auto& best_ask = book.asks.begin()->second;
+            best_ask_price = book.asks.begin()->first;
+            best_ask_quantity = best_ask.total_quantity;
+        }
+
+        TopOfBookMessage tob {
+
+            .type = MarketDataType::TopOfBook,
+
+            .best_bid_price = best_bid_price,
+
+            .best_bid_quantity = best_bid_quantity,
+
+            .best_ask_price = best_ask_price,
+
+            .best_ask_quantity = best_ask_quantity,
+
+            .timestamp = next_trade_id
+        };
+
+        publisher.publish(&tob, sizeof(tob));
+
+        // std::cout << "TOB: " << "Bid "<< best_bid_price << " x "
+        // << best_bid_quantity << " | Ask " << best_ask_price << " x "
+        // << best_ask_quantity << "\n";
     }
 };
 

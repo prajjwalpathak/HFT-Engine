@@ -29,7 +29,19 @@ add_executable(gateway
     main/gateway_main.cpp
 )
 
-target_link_libraries(engine PRIVATE core)
+# Market Data Client
+add_executable(market_data_client
+    network/market_data_client.cpp
+)
+
+target_include_directories(market_data_client
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(engine
+    PRIVATE core
+)
 
 target_include_directories(exchange_server
     PRIVATE
