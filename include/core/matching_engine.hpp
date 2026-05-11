@@ -4,17 +4,23 @@
 #include "core/order_book.hpp"
 #include "memory/order_pool.hpp"
 #include "core/engine_stats.hpp"
+#include "network/udp_publisher.hpp"
+#include "network/market_data.hpp"
 
 namespace hft {
 
 class MatchingEngine {
 public:
+
     OrderBook book;
 
     EngineStats stats;
 
-    MatchingEngine(OrderPool& pool)
-    : book(pool) {}
+    UDPPublisher& publisher;
+
+    MatchingEngine(OrderPool& pool, UDPPublisher& publisher): book(pool), publisher(publisher){}
+
+    uint64_t next_trade_id = 1;
 
     void process_order(uint32_t incoming_index) {
         ++stats.orders_processed;
@@ -38,6 +44,7 @@ public:
     }
 
 private:
+    void publish_top_of_book();
 
     void match_buy(uint32_t incoming_index) {
 
@@ -60,17 +67,39 @@ private:
 
                 uint32_t resting_index = limit.head;
 
-                Order& resting =
-                    book.pool.get(resting_index);
+                Order& resting = book.pool.get(resting_index);
 
-                Quantity traded =
-                    std::min(incoming.quantity,
-                             resting.quantity);
+                Quantity traded = std::min(incoming.quantity, resting.quantity);
                 
                 ++stats.trades_executed;
 
                 incoming.reduce(traded);
                 resting.reduce(traded);
+
+                TradeMessage trade {
+                    .type = MarketDataType::Trade,
+
+                    .trade_id = next_trade_id++,
+
+                    .buy_order_id =
+                        incoming.side == Side::Buy
+                            ? incoming.order_id
+                            : resting.order_id,
+
+                    .sell_order_id =
+                        incoming.side == Side::Sell
+                            ? incoming.order_id
+                            : resting.order_id,
+
+                    .price = resting.price,
+
+                    .quantity = traded,
+
+                    .timestamp = incoming.timestamp
+                };
+
+                publisher.publish(&trade, sizeof(trade));
+                std::cout << "Broadcasted Trade ID: " << trade.trade_id << "\n";
 
                 limit.total_quantity -= traded;
 
@@ -146,6 +175,17 @@ private:
             if (limit.empty()) {
                 book.bids.erase(best_bid_it);
             }
+        }
+    }
+
+    void publish_top_of_book() {
+        uint32_t best_bid_price = 0;
+        uint32_t best_bid_quantity = 0;
+
+        if (!book.bids.empty()) {
+            auto& best_bid = book.bids.begin()->second;
+            best_bid_price = book.bids.begin()->first;
+            best_bid_quantity = best_bid.total_quantity;
         }
     }
 };

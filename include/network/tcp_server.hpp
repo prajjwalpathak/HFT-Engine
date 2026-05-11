@@ -2,12 +2,16 @@
 
 #include <cstdint>
 
+#include "core/matching_engine.hpp"
+
 namespace hft {
 
 class TCPServer {
 public:
 
-    explicit TCPServer(uint16_t port);
+    MatchingEngine& engine;
+
+    explicit TCPServer(uint16_t port, MatchingEngine& engine);
 
     void start();
 

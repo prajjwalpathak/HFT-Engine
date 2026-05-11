@@ -9,11 +9,14 @@ add_library(core
 add_executable(engine
     main/engine_main.cpp
     memory/order_pool.cpp
+    network/udp_publisher.cpp
 )
 
 # Exchange Server
 add_executable(exchange_server
     network/tcp_server.cpp
+    memory/order_pool.cpp
+    network/udp_publisher.cpp
 )
 
 # Test Client
