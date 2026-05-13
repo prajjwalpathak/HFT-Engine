@@ -28,7 +28,7 @@ int main() {
 
     OrderPool pool(1000000);
 
-    UDPPublisher publisher("127.0.0.1", 9999);
+    UDPPublisher publisher("127.0.0.1", 5000);
 
     MatchingEngine engine(pool, publisher);
 
@@ -113,8 +113,6 @@ int main() {
     std::cout << "NewOrderMessage Size: " << sizeof(NewOrderMessage) << " bytes\n";
     std::cout << "TradeMessage Size: " << sizeof(TradeMessage) << "\n";
     std::cout << "TopOfBookMessage Size: " << sizeof(TopOfBookMessage) << "\n";
-
-    // UDPPublisher publisher("127.0.0.1", 9999);
 
     TradeMessage trade {
 

@@ -26,7 +26,7 @@ int main() {
 
     addr.sin_addr.s_addr = INADDR_ANY;
 
-    addr.sin_port = htons(9999);
+    addr.sin_port = htons(5000);
 
     if (bind(sock, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
         std::cerr << "Bind failed\n";

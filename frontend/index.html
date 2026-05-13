@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        HFT Exchange Dashboard
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="styles.css"
+    >
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+
+            <h1>
+                HFT Exchange Engine
+            </h1>
+
+            <div id="status">
+                ● LIVE
+            </div>
+
+        </header>
+
+        <section class="metrics">
+
+            <div class="metric-card">
+
+                <h2>
+                    Orders/sec
+                </h2>
+
+                <p id="ordersPerSec">
+                    0
+                </p>
+
+            </div>
+
+            <div class="metric-card">
+
+                <h2>
+                    Feed Messages
+                </h2>
+
+                <p id="feedMessages">
+                    0
+                </p>
+
+            </div>
+
+            <div class="metric-card">
+
+                <h2>
+                    Active Clients
+                </h2>
+
+                <p id="clients">
+                    16
+                </p>
+
+            </div>
+
+        </section>
+
+        <section class="orderbook">
+
+            <div class="book-side">
+
+                <h2>
+                    ASKS
+                </h2>
+
+                <div id="asks"></div>
+
+            </div>
+
+            <div class="book-side">
+
+                <h2>
+                    BIDS
+                </h2>
+
+                <div id="bids"></div>
+
+            </div>
+
+        </section>
+
+        <section class="trade-tape">
+
+            <h2>
+                Live Trades
+            </h2>
+
+            <div id="trades"></div>
+
+        </section>
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
