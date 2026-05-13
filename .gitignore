@@ -1,6 +1,44 @@
+# Build artifacts
 build/
-.vs/
-out/
-*.o
-*.out
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Compile commands
+compile_commands.json
+
+# VSCode
+.vscode/
+
+# CLion
+.idea/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# uWebSockets
+uWebSockets/
+
+# Logs
 *.log
+
+# Temporary files
+*.tmp
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Binaries
+*.out
+*.o
+*.so
+*.a
+
+# Environment files
+.env
