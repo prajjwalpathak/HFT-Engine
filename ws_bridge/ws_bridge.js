@@ -6,6 +6,23 @@ const TRADE = 1;
 const TOP_OF_BOOK = 2;
 let lastSequence = 0;
 
+let engineStats = {
+
+    orders: 0,
+
+    trades: 0,
+
+    cancelled: 0,
+
+    active: 0
+};
+
+// setInterval(() => {
+//     sendControlCommand(
+//         'STATS'
+//     );
+// }, 1000);
+
 const wss =
     new WebSocket.Server({
         port: 8080

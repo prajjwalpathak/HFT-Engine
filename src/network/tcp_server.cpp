@@ -149,11 +149,6 @@ void TCPServer::start() {
                     continue;
                 }
 
-                // std::cout << "Received Order:\n";
-                // std::cout << "Order ID: " << msg.order_id << "\n";
-                // std::cout << "Price: " << msg.price << "\n";
-                // std::cout << "Quantity: " << msg.quantity << "\n";
-
                 uint32_t idx = engine.book.pool.allocate();
 
                 Order& order = engine.book.pool.get(idx);

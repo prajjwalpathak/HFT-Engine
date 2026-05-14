@@ -196,13 +196,13 @@ void MarketSimulator::run() {
 
         if (mode == SimulationMode::NORMAL) {
             std::this_thread::sleep_for(
-                std::chrono::milliseconds(5)
+                std::chrono::milliseconds(10)
             );
         }
 
         else if (mode == SimulationMode::HFT) {
             std::this_thread::sleep_for(
-                std::chrono::microseconds(200)
+                std::chrono::microseconds(500)
             );
         }
 

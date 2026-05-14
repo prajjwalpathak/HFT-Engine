@@ -37,6 +37,18 @@
             <div class="metric-card">
 
                 <h2>
+                    Mode:
+                </h2>
+
+                <p id="currentMode" class="blue">
+                    NORMAL
+                </p>
+
+            </div>
+
+            <div class="metric-card">
+
+                <h2>
                     Orders/sec
                 </h2>
 
@@ -49,23 +61,22 @@
             <div class="metric-card">
 
                 <h2>
-                    Feed Messages
+                    Total Orders
                 </h2>
 
-                <p id="feedMessages">
+                <p id="totalOrders">
                     0
                 </p>
 
             </div>
-
             <div class="metric-card">
 
                 <h2>
-                    Active Clients
+                    Time Elapsed
                 </h2>
 
-                <p id="clients">
-                    16
+                <p id="elapsedTime">
+                    0s
                 </p>
 
             </div>
@@ -128,6 +139,9 @@
 
                 <button id="stressBtn">
                     🔥 Stress Test
+                </button>
+                <button id="resetBtn">
+                    ⌛ Reset
                 </button>
 
             </div>

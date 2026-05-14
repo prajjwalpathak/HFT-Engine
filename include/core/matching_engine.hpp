@@ -230,10 +230,6 @@ private:
         };
 
         publisher.publish(&tob, sizeof(tob));
-
-        // std::cout << "TOB: " << "Bid "<< best_bid_price << " x "
-        // << best_bid_quantity << " | Ask " << best_ask_price << " x "
-        // << best_ask_quantity << "\n";
     }
 };
 

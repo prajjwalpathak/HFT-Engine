@@ -1,7 +1,11 @@
 const socket = new WebSocket('ws://localhost:8080');
 
-let messagesReceived = 0;
+let totalOrders = 0;
+let ordersPerSecond = 0;
+let sessionSeconds = 0;
+let currentMode = 'NORMAL';
 let frontendRunning = false;
+let renderCounter = 0;
 
 socket.onopen = () => {
     socket.onerror = (err) => {
@@ -21,22 +25,48 @@ socket.onmessage = (event) => {
         return;
     }
 
-    messagesReceived++;
-
-    document.getElementById('feedMessages').innerText = messagesReceived;
+    ++totalOrders;
+    ++ordersPerSecond;
 
     const data = JSON.parse(event.data);
 
     if (data.type === 'trade') {
-        renderTrade(data);
+        renderCounter++;
+        renderCounterData(renderTrade, data);
     }
 
     if (data.type === 'orderbook') {
-        renderOrderbook(data);
+        renderCounterData(renderOrderbook, data);
     }
 };
 
+const renderCounterData = (renFun, data) => {
+    let sampleRate = 80;
+
+    if (currentMode === 'HFT') {
+        sampleRate = 100;
+    }
+    else if (currentMode === 'STRESS') {
+        sampleRate = 120;
+    }
+
+    if (renderCounter % sampleRate === 0) {
+        renFun(data);
+    }
+}
+
+const sessionTimeInterval = setInterval(() => {
+    if (frontendRunning) {
+        sessionSeconds++;
+        document.getElementById('totalOrders').innerText = totalOrders;
+        document.getElementById('elapsedTime').innerText = sessionSeconds + 's';
+        document.getElementById('ordersPerSec').innerText = ordersPerSecond;
+        ordersPerSecond = 0;
+    }
+}, 1000);
+
 let running = false;
+let modeElement = document.getElementById('currentMode');
 
 document
     .getElementById(
@@ -69,6 +99,11 @@ document
         'normalBtn'
     )
     .onclick = () => {
+        currentMode = 'NORMAL';
+        modeElement.innerText = currentMode;
+        modeElement.classList.add('blue');
+        modeElement.classList.remove('red');
+        modeElement.classList.remove('green');
         socket.send(
             'NORMAL'
         );
@@ -79,6 +114,11 @@ document
         'hftBtn'
     )
     .onclick = () => {
+        currentMode = 'HFT';
+        modeElement.innerText = currentMode;
+        modeElement.classList.add('green');
+        modeElement.classList.remove('blue');
+        modeElement.classList.remove('red');
         socket.send(
             'HFT'
         );
@@ -89,10 +129,86 @@ document
         'stressBtn'
     )
     .onclick = () => {
+        currentMode = 'STRESS';
+        modeElement.innerText = currentMode;
+        modeElement.classList.add('red');
+        modeElement.classList.remove('blue');
+        modeElement.classList.remove('green');
         socket.send(
             'STRESS'
         );
     };
+
+document
+    .getElementById(
+        'resetBtn'
+    )
+    .onclick = () => {
+        totalOrders = 0;
+        ordersPerSecond = 0;
+        sessionSeconds = 0;
+        currentMode = 'NORMAL';
+        running = false;
+        frontendRunning = false;
+        renderCounter = 0;
+
+        socket.send('RESET');
+        socket.send('NORMAL');
+        document
+            .getElementById(
+                'toggleBtn'
+            )
+            .innerText = '▶ Start';
+
+
+        modeElement.innerText = currentMode;
+        modeElement.classList.add('blue');
+        modeElement.classList.remove('red');
+        modeElement.classList.remove('green');
+
+
+        document
+            .getElementById(
+                'ordersPerSec'
+            )
+            .innerText = '0';
+
+        document
+            .getElementById(
+                'totalOrders'
+            )
+            .innerText = '0';
+
+        document
+            .getElementById(
+                'elapsedTime'
+            )
+            .innerText = '0s';
+
+        document
+            .getElementById(
+                'trades'
+            )
+            .innerHTML = '';
+
+        document
+            .getElementById(
+                'bids'
+            )
+            .innerHTML = '';
+
+        document
+            .getElementById(
+                'asks'
+            )
+            .innerHTML = '';
+    };
+
+window.addEventListener('beforeunload', (event) => {
+    socket.send('NORMAL');
+});
+
+
 
 function renderTrade(data) {
 
@@ -107,8 +223,7 @@ function renderTrade(data) {
         );
 
     div.className =
-        `trade ${
-            data.side === 'BUY'
+        `trade ${data.side === 'BUY'
             ? 'buy'
             : 'sell'
         }`;
@@ -128,11 +243,6 @@ function renderTrade(data) {
             trades.lastChild
         );
     }
-
-    document.getElementById(
-        'ordersPerSec'
-    ).innerText =
-        messagesReceived;
 }
 
 function renderOrderbook(data) {

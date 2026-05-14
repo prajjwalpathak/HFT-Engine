@@ -128,3 +128,18 @@ button:hover {
 #stressBtn:hover {
     background: #cc3333;
 }
+
+.blue {
+    color: rgb(80, 80, 255);
+    font-weight: bold;
+}
+
+.green {
+    color: #00ff88;
+    font-weight: bold;
+}
+
+.red {
+    color: #ff4d4d;
+    font-weight: bold;
+}
