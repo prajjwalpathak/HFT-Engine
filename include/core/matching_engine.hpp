@@ -46,6 +46,8 @@ public:
 
 private:
 
+    uint64_t market_sequence = 0;
+
     void match_buy(uint32_t incoming_index) {
 
         Order& incoming = book.pool.get(incoming_index);
@@ -79,7 +81,9 @@ private:
                 TradeMessage trade {
                     .type = MarketDataType::Trade,
 
-                    .trade_id = next_trade_id++,
+                    .sequence_number = ++market_sequence,
+
+                    .trade_id = ++next_trade_id,
 
                     .buy_order_id =
                         incoming.side == Side::Buy
@@ -95,20 +99,15 @@ private:
 
                     .quantity = traded,
 
+                    .aggressor_side = static_cast<uint8_t>(Side::Buy),
+
                     .timestamp = incoming.timestamp
                 };
 
                 publisher.publish(&trade, sizeof(trade));
                 publish_top_of_book();
-                // std::cout << "Broadcasted Trade ID: " << trade.trade_id << "\n";
 
                 limit.total_quantity -= traded;
-
-                // std::cout << "TRADE: "
-                //           << traded
-                //           << " @ "
-                //           << resting.price
-                //           << "\n";
 
                 // Remove filled resting order
                 if (__builtin_expect(resting.is_filled(), 0)) {
@@ -159,6 +158,8 @@ private:
 
                     .type = MarketDataType::Trade,
 
+                    .sequence_number = ++market_sequence,
+
                     .trade_id = next_trade_id++,
 
                     .buy_order_id = resting.order_id,
@@ -169,6 +170,8 @@ private:
 
                     .quantity = traded,
 
+                    .aggressor_side = static_cast<uint8_t>(Side::Sell),
+
                     .timestamp = incoming.timestamp
                 };
 
@@ -176,12 +179,6 @@ private:
                 publish_top_of_book();
 
                 limit.total_quantity -= traded;
-
-                // std::cout << "TRADE: "
-                //           << traded
-                //           << " @ "
-                //           << resting.price
-                //           << "\n";
 
                 if (__builtin_expect(resting.is_filled(), 0)) {
                     limit.pop_front(book.pool);
@@ -218,6 +215,8 @@ private:
         TopOfBookMessage tob {
 
             .type = MarketDataType::TopOfBook,
+
+            .sequence_number = ++market_sequence,
 
             .best_bid_price = best_bid_price,
 

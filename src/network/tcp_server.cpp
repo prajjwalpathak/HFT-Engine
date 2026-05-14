@@ -10,9 +10,13 @@
 #include <cerrno>
 #include <sys/epoll.h>
 #include <atomic>
+#include <thread>
+#include <algorithm>
+#include <cctype>
 
 #include "network/protocol.hpp"
 #include "memory/order_pool.hpp"
+#include "simulation/market_simulator.hpp"
 
 namespace hft {
 
@@ -196,6 +200,87 @@ int main() {
     UDPPublisher publisher("127.0.0.1", 5000);
 
     MatchingEngine engine(pool, publisher);
+
+    MarketSimulator simulator(engine);
+
+    std::thread control_thread([&]() {
+
+        int control_sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+        sockaddr_in control_addr {};
+
+        control_addr.sin_family =AF_INET;
+
+        control_addr.sin_addr.s_addr = INADDR_ANY;
+
+        control_addr.sin_port = htons(5001);
+
+        bind(
+            control_sock,
+            reinterpret_cast<sockaddr*>(&control_addr), sizeof(control_addr));
+
+        char buffer[128] = {};
+
+        while (true) {
+
+            ssize_t bytes =
+                recv(
+                    control_sock,
+                    buffer,
+                    sizeof(buffer) - 1,
+                    0
+                );
+
+            if (bytes <= 0) {
+                continue;
+            }
+
+            buffer[bytes] = '\0';
+
+            std::string command(buffer);
+
+            std::cout << "Control: " << command << "\n";
+
+            if (command == "START") {
+
+                simulator.start();
+            }
+
+            else if (command == "STOP") {
+
+                simulator.stop();
+            }
+
+            else if (command == "NORMAL") {
+
+                simulator.set_mode(
+                    SimulationMode::NORMAL
+                );
+            }
+
+            else if (command == "HFT") {
+
+                simulator.set_mode(
+                    SimulationMode::HFT
+                );
+            }
+
+            else if (command == "STRESS") {
+
+                simulator.set_mode(
+                    SimulationMode::STRESS
+                );
+            }
+
+            memset(
+                buffer,
+                0,
+                sizeof(buffer)
+            );
+        }
+    });
+
+    control_thread.detach();
 
     TCPServer server(9000, engine);
 

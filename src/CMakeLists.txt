@@ -17,6 +17,7 @@ add_executable(exchange_server
     network/tcp_server.cpp
     memory/order_pool.cpp
     network/udp_publisher.cpp
+    simulation/market_simulator.cpp
 )
 
 # Test Client

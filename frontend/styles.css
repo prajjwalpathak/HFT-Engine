@@ -73,3 +73,58 @@ header {
 .sell {
     color: #ff4d4d;
 }
+
+.book-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    margin: 4px 0;
+    border-radius: 6px;
+    font-family: monospace;
+}
+
+.bid-row {
+    background:rgba(0, 255, 136, 0.15);
+    color: #00ff88;
+}
+
+.ask-row {
+    background:rgba(255, 77, 77, 0.15);
+    color: #ff4d4d;
+}
+
+.controls {
+    background: #1b1f2a;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 30px;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+button {
+    background: #222;
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #333;
+}
+
+#stressBtn {
+    background: #aa2222;
+}
+
+#stressBtn:hover {
+    background: #cc3333;
+}

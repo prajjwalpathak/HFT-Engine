@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+constexpr uint16_t PROTOCOL_VERSION = 1;
+
 namespace hft {
 
 enum class MarketDataType : uint8_t {
@@ -15,6 +17,8 @@ struct alignas(64) TradeMessage {
 
     MarketDataType type;
 
+    uint64_t sequence_number;
+
     uint64_t trade_id;
 
     uint64_t buy_order_id;
@@ -25,12 +29,16 @@ struct alignas(64) TradeMessage {
 
     uint32_t quantity;
 
+    uint8_t aggressor_side;
+
     uint64_t timestamp;
 };
 
 struct alignas(64) TopOfBookMessage {
 
     MarketDataType type;
+
+    uint64_t sequence_number;
 
     uint32_t best_bid_price;
 
@@ -44,11 +52,16 @@ struct alignas(64) TopOfBookMessage {
 };
 
 static_assert(
-    sizeof(TradeMessage) <= 64
+    sizeof(
+        TradeMessage
+    ) == 64
 );
 
 static_assert(
-    sizeof(TopOfBookMessage) <= 64
+
+    sizeof(
+        TopOfBookMessage
+    ) == 64
 );
 
 }

@@ -2,77 +2,142 @@ const WebSocket = require('ws');
 const dgram = require('dgram');
 
 let packetsReceived = 0;
-const wss = new WebSocket.Server({ port: 8080 });
+const TRADE = 1;
+const TOP_OF_BOOK = 2;
+let lastSequence = 0;
 
-console.log('WebSocket bridge running on port 8080');
+const wss =
+    new WebSocket.Server({
+        port: 8080
+    });
 
-const udpSocket = dgram.createSocket('udp4');
-
-udpSocket.bind(5000, () => {
-    console.log('Listening for UDP market data on port 5000');
-}
+console.log(
+    'WebSocket bridge running on port 8080'
 );
+
+const udpSocket =
+    dgram.createSocket('udp4');
+
+const controlSocket =
+    dgram.createSocket('udp4');
+
+udpSocket.bind(
+    5000,
+    () => {
+
+        console.log(
+            'Listening for UDP market data on port 5000'
+        );
+    }
+);
+
+function sendControlCommand(command) {
+
+    console.log('Sending:', command);
+
+    controlSocket.send(
+        Buffer.from(command),
+        5001,
+        '127.0.0.1'
+    );
+}
 
 udpSocket.on('message', (msg) => {
 
     packetsReceived++;
 
-    if (packetsReceived % 10000 === 0) {
+    const type = msg.readUInt8(0);
 
-        console.log(
-            'UDP packets:',
-            packetsReceived
+    if (type === 1) {
+
+        const price = msg.readUInt32LE(40);
+
+        const quantity = msg.readUInt32LE(44);
+
+        const sideRaw = msg.readUInt8(48);
+
+        const side = sideRaw === 0 ? 'BUY' : 'SELL';
+
+        const timestamp = Number(msg.readBigUInt64LE(56));
+
+        wss.clients.forEach(
+            (client) => {
+
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(
+                        JSON.stringify({
+                            type: 'trade',
+                            price,
+                            quantity,
+                            side
+                        })
+                    );
+                }
+            }
         );
     }
 
-    const tradeEvent = {
+    else if (type === 2) {
 
-        type: 'trade',
+        const bidPrice =
+            msg.readUInt32LE(16);
 
-        price:
-            10000 +
-            Math.floor(
-                Math.random() * 100
-            ),
+        const bidQty =
+            msg.readUInt32LE(20);
 
-        quantity:
-            1 +
-            Math.floor(
-                Math.random() * 500
-            ),
+        const askPrice =
+            msg.readUInt32LE(24);
 
-        side:
-            Math.random() > 0.5
-                ? 'BUY'
-                : 'SELL'
-    };
+        const askQty =
+            msg.readUInt32LE(28);
 
-    wss.clients.forEach((client) => {
+        wss.clients.forEach(
+            (client) => {
 
-        if (
-            client.readyState ===
-            WebSocket.OPEN
-        ) {
+                if (client.readyState === WebSocket.OPEN) {
 
-            client.send(
-                JSON.stringify(
-                    tradeEvent
-                )
-            );
-        }
-    });
-});
+                    client.send(
+                        JSON.stringify({
+
+                            type: 'orderbook',
+
+                            bids: [
+                                {
+                                    price: bidPrice,
+                                    quantity: bidQty
+                                }
+                            ],
+
+                            asks: [
+                                {
+                                    price: askPrice,
+                                    quantity: askQty
+                                }
+                            ]
+                        })
+                    );
+                }
+            }
+        );
+    }
+}
+);
 
 wss.on('connection', (ws) => {
     console.log('Browser connected');
 
-    ws.on('close', () => {
-        console.log('Browser disconnected');
+    ws.on('message', (message) => {
+
+        const command = message.toString();
+
+        console.log('Frontend command:', command);
+
+        sendControlCommand(command);
     }
     );
 
-    ws.on('message', (message) => {
-        console.log('Received:', message.toString());
+    ws.on('close', () => {
+        console.log('Browser disconnected');
     }
     );
 }
