@@ -175,10 +175,6 @@ void TCPServer::start() {
 
                 engine.process_order(idx);
                 // std::cout << "Order processed by engine\n";
-
-                if (packets_processed % 10000 == 0) {
-                    std::cout << "Packets processed: " << packets_processed.load() << "\n";
-                }
             }
         }
     }

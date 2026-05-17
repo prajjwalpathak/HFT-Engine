@@ -1,6 +1,9 @@
 #pragma once
 
 #include <iostream>
+
+#include <chrono>
+
 #include "core/order_book.hpp"
 #include "memory/order_pool.hpp"
 #include "core/engine_stats.hpp"
@@ -23,6 +26,8 @@ public:
     uint64_t next_trade_id = 1;
 
     void process_order(uint32_t incoming_index) {
+        auto start = std::chrono::high_resolution_clock::now();
+
         ++stats.orders_processed;
 
         Order& incoming = book.pool.get(incoming_index);
@@ -41,6 +46,41 @@ public:
         }
         else {
             book.pool.free(incoming_index);
+        }
+
+        auto end = std::chrono::high_resolution_clock::now();
+
+        uint64_t latency = std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count();
+
+        stats.total_latency_ns += latency;
+
+        uint64_t current_max = stats.max_latency_ns.load();
+
+        while(latency > current_max && stats.max_latency_ns.compare_exchange_weak(current_max,
+                    latency
+                )){}
+
+        if(stats.orders_processed.load()% 50000 == 0){
+
+            double avg_latency = static_cast<double>(stats.total_latency_ns.load())/
+                stats.orders_processed.load();
+
+            std::cout
+                << "Orders: "
+                << stats.orders_processed.load()
+                << "\n";
+
+            std::cout
+                << "Avg latency(ns): "
+                << avg_latency
+                << "\n";
+
+            std::cout
+                << "Max latency(ns): "
+                << stats.max_latency_ns.load()
+                << "\n";
+
+            stats.max_latency_ns = 0;
         }
     }
 

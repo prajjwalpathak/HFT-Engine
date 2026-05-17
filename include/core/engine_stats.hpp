@@ -14,6 +14,10 @@ struct alignas(64) EngineStats {
     std::atomic<uint64_t> orders_cancelled = 0;
 
     std::atomic<uint64_t> active_orders = 0;
+
+    std::atomic<uint64_t> total_latency_ns = 0;
+
+    std::atomic<uint64_t> max_latency_ns = 0;
 };
 
 }
